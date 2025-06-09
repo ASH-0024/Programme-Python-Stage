@@ -1,0 +1,51 @@
+import pandas as pd
+
+# Charger le fichier sans en-tête
+df = pd.read_excel("test.xlsx", header=None)
+
+# Nommer la colonne
+df.columns = ["Horodatage"]
+
+# Convertir en datetime
+df["Horodatage"] = pd.to_datetime(df["Horodatage"], format="%d/%m/%Y %H:%M:%S")
+
+# Initialisation
+resultats = []
+start_idx = 0  # index de début de période
+
+# Parcours de la colonne
+for i in range(1, len(df)):
+    minute_actuelle = df.loc[i, "Horodatage"].replace(second=0)
+    minute_prec = df.loc[i - 1, "Horodatage"].replace(second=0)
+
+    # Si la minute a changé, on calcule la différence sur la période précédente
+    if minute_actuelle != minute_prec:
+        debut = df.loc[start_idx, "Horodatage"]
+        fin = df.loc[i - 1, "Horodatage"]  # juste avant le changement de minute
+        diff_sec = (fin - debut).total_seconds()
+
+        resultats.append({
+            "Début période": debut,
+            "Fin période": fin,
+            "Durée (s)": diff_sec
+        })
+
+        # Nouvelle période commence à la ligne du changement de minute
+        start_idx = i
+
+# Dernière période à traiter (si le fichier ne finit pas sur un changement de minute)
+if start_idx < len(df) - 1:
+    debut = df.loc[start_idx, "Horodatage"]
+    fin = df.loc[len(df) - 1, "Horodatage"]
+    diff_sec = (fin - debut).total_seconds()
+    resultats.append({
+        "Début période": debut,
+        "Fin période": fin,
+        "Durée (s)": diff_sec
+    })
+
+# Export en Excel
+result_df = pd.DataFrame(resultats)
+result_df.to_excel("resultat_decoupage_par_minute.xlsx", index=False)
+
+print("Calcul terminé. Résultats enregistrés dans resultat_decoupage_par_minute.xlsx")
