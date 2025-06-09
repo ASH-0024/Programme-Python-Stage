@@ -1,0 +1,68 @@
+import pandas as pd
+
+# Charger le fichier Excel
+fichier = 'tension info complet_vf.xlsx'  # à remplacer par le nom de ton fichier
+df = pd.read_excel(fichier)
+
+# Extraire les colonnes I et J (index 8 et 9 car Python commence à 0)
+valeurs = df.iloc[:, 8]
+durees = pd.to_datetime(df.iloc[:, 9], errors='coerce')
+
+# Ajouter une colonne 'minute' pour faciliter le regroupement
+df_filtered = pd.DataFrame({'Valeur': valeurs, 'Durée': durees})
+df_filtered['Minute'] = df_filtered['Durée'].dt.floor('min')  # garde l'heure et la minute
+
+# Liste pour stocker les résultats
+resultats = []
+
+# Initialisation
+ancienne_minute = None
+buffer = []
+
+# Parcours ligne par ligne
+for i, row in df_filtered.iterrows():
+    minute = row['Minute']
+
+    if pd.isna(minute):
+        continue  # On saute les lignes sans durée valide
+
+    if ancienne_minute is None:
+        ancienne_minute = minute
+
+    if minute == ancienne_minute:
+        buffer.append((i, row['Valeur'], row['Durée']))
+    else:
+        # Prendre la valeur maximale de la période précédente
+        if buffer:
+            idx_max, val_max, duree_max = max(buffer, key=lambda x: x[1])
+            resultats.append({
+                'Index': idx_max,
+                'Valeur Max': val_max,
+                'Minute': ancienne_minute,
+                'Durée exacte': duree_max
+            })
+        # Redémarrer le buffer avec la nouvelle minute
+        buffer = [(i, row['Valeur'], row['Durée'])]
+        ancienne_minute = minute
+
+# Dernier buffer (à ne pas oublier)
+if buffer:
+    idx_max, val_max, duree_max = max(buffer, key=lambda x: x[1])
+    resultats.append({
+        'Index': idx_max,
+        'Valeur Max': val_max,
+        'Minute': ancienne_minute,
+        'Durée exacte': duree_max
+    })
+
+# Résultat final sous forme de DataFrame
+df_resultats = pd.DataFrame(resultats)
+
+
+
+
+
+# Sauvegarde facultative
+df_resultats.to_excel("dernier.xlsx", index=False)
+
+print("Traitement terminé. Résultats extraits.")
