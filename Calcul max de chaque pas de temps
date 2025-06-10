@@ -58,11 +58,7 @@ if buffer:
 # Résultat final sous forme de DataFrame
 df_resultats = pd.DataFrame(resultats)
 
-
-
-
-
-# Sauvegarde facultative
+# Sauvegarde le fichier
 df_resultats.to_excel("dernier.xlsx", index=False)
 
 print("Traitement terminé. Résultats extraits.")
